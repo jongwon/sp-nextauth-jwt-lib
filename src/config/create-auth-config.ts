@@ -6,14 +6,39 @@ import type { AuthConfig, AuthResponse } from '../types'
  * Create NextAuth configuration with JWT integration
  */
 export function createAuthConfig(config: AuthConfig): NextAuthOptions {
+  // Filter enabled providers
+  const enabledProviders = config.providers.filter(provider => 
+    provider.enabled !== false
+  )
+  
+  // Check if password auth is enabled
+  const passwordAuthEnabled = config.features?.enablePasswordAuth !== false &&
+    config.features?.passwordAuthPolicy !== 'DISABLED'
+  
+  // Check if we're in development environment
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  
   // Create providers based on configuration
-  const providers = config.providers.map(providerConfig => {
-    if (providerConfig.type === 'credentials') {
-      return createCredentialsProvider(config)
-    } else {
-      return createOAuth2Provider(providerConfig, config)
-    }
-  })
+  const providers = enabledProviders
+    .filter(providerConfig => {
+      // Filter out credentials provider if password auth is disabled
+      if (providerConfig.type === 'credentials') {
+        if (!passwordAuthEnabled) return false
+        
+        // Check if it's development-only
+        if (config.features?.passwordAuthPolicy === 'DEVELOPMENT_ONLY' && !isDevelopment) {
+          return false
+        }
+      }
+      return true
+    })
+    .map(providerConfig => {
+      if (providerConfig.type === 'credentials') {
+        return createCredentialsProvider(config)
+      } else {
+        return createOAuth2Provider(providerConfig, config)
+      }
+    })
 
   return {
     providers,

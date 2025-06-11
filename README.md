@@ -1,16 +1,19 @@
 # SP NextAuth JWT Library
 
-A reusable authentication library for Next.js applications using NextAuth.js with JWT integration.
+A reusable authentication library for Next.js applications using NextAuth.js with JWT integration and configurable authentication methods.
 
 ## Features
 
 - 🔐 JWT-based authentication
-- 🌐 OAuth2 providers (Kakao, Google, Naver)
-- 📧 Email/password authentication
+- 🌐 Multiple OAuth2 providers (Google, Facebook, GitHub, Kakao, Naver)
+- 📧 Configurable email/password authentication
 - 🔄 Automatic token refresh
 - 🎣 React hooks for authentication
 - 📡 Authenticated API client
 - 🎨 TypeScript support
+- ⚙️ Flexible authentication policies
+- 🎯 Domain-based access control
+- 🖼️ Pre-built authentication components
 
 ## Installation
 
@@ -28,31 +31,28 @@ Create `pages/api/auth/[...nextauth].ts` or `app/api/auth/[...nextauth]/route.ts
 
 ```typescript
 import NextAuth from 'next-auth'
-import { createAuthConfig } from 'sp-nextauth-jwt-lib'
+import { buildAuthConfig } from 'sp-nextauth-jwt-lib'
 
-const authConfig = createAuthConfig({
-  apiEndpoints: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL!,
-    signin: '/api/auth/signin',
-    signup: '/api/auth/signup',
-    refresh: '/api/auth/refresh',
-    oauth2Callback: '/api/auth/oauth2',
+const authConfig = buildAuthConfig({
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
+  features: {
+    enablePasswordAuth: true,
+    passwordAuthPolicy: 'ALLOW_ALL', // 'ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED'
+    enabledOAuthProviders: ['google', 'github', 'kakao'],
   },
-  providers: [
-    {
-      type: 'credentials',
-      name: 'email-password',
+  oauthProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
-    {
-      type: 'oauth2',
-      name: 'kakao',
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+    kakao: {
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
     },
-  ],
-  pages: {
-    signIn: '/login',
-    error: '/auth/error',
   },
 })
 
@@ -72,9 +72,21 @@ NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
 NEXT_PUBLIC_API_URL=http://localhost:8080
 
-# OAuth2 Providers
+# OAuth2 Providers (only set the ones you're using)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+FACEBOOK_CLIENT_ID=your-facebook-client-id
+FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
 KAKAO_CLIENT_ID=your-kakao-client-id
 KAKAO_CLIENT_SECRET=your-kakao-client-secret
+
+NAVER_CLIENT_ID=your-naver-client-id
+NAVER_CLIENT_SECRET=your-naver-client-secret
 ```
 
 ### 3. Wrap App with SessionProvider
@@ -95,7 +107,43 @@ export default function App({
 }
 ```
 
-### 4. Use Authentication in Components
+### 4. Use Authentication Components
+
+```tsx
+import { SignInForm, OAuthButton } from 'sp-nextauth-jwt-lib'
+
+// Complete sign-in form with password and OAuth options
+export function LoginPage() {
+  return (
+    <SignInForm
+      features={{
+        enablePasswordAuth: true,
+        passwordAuthPolicy: 'ALLOW_ALL',
+        enabledOAuthProviders: ['google', 'github', 'kakao'],
+        allowedEmailDomains: ['company.com'], // Optional email restrictions
+      }}
+      callbackUrl="/dashboard"
+      onSuccess={() => console.log('Login successful')}
+      onError={(error) => console.error('Login failed:', error)}
+    />
+  )
+}
+
+// Or use individual OAuth buttons
+export function SocialLogin() {
+  return (
+    <div>
+      <OAuthButton provider="google" />
+      <OAuthButton provider="github" />
+      <OAuthButton provider="kakao" />
+      <OAuthButton provider="facebook" />
+      <OAuthButton provider="naver" />
+    </div>
+  )
+}
+```
+
+### 5. Use Authentication in Components
 
 ```tsx
 import { useAuthSession } from 'sp-nextauth-jwt-lib'
@@ -125,7 +173,7 @@ export function UserProfile() {
 }
 ```
 
-### 5. Make Authenticated API Calls
+### 6. Make Authenticated API Calls
 
 ```tsx
 import { useAuthenticatedFetch } from 'sp-nextauth-jwt-lib'
@@ -156,6 +204,38 @@ export function TodoList() {
 ```
 
 ## Advanced Usage
+
+### Authentication Policies
+
+```typescript
+// Disable password authentication in production
+const authConfig = buildAuthConfig({
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
+  features: {
+    enablePasswordAuth: false, // Completely disable password auth
+    enabledOAuthProviders: ['google', 'github'], // Only OAuth login
+  },
+})
+
+// Allow password auth only in development
+const authConfig = buildAuthConfig({
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
+  features: {
+    passwordAuthPolicy: 'DEVELOPMENT_ONLY',
+    enabledOAuthProviders: ['google', 'github', 'kakao'],
+  },
+})
+
+// Restrict password auth to specific email domains
+const authConfig = buildAuthConfig({
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
+  features: {
+    enablePasswordAuth: true,
+    allowedEmailDomains: ['company.com', 'partner.com'],
+    enabledOAuthProviders: ['google'],
+  },
+})
+```
 
 ### Custom Provider Configuration
 
@@ -247,9 +327,26 @@ export default async function handler(req, res) {
 
 ## API Reference
 
+### buildAuthConfig(options)
+
+Creates a NextAuth configuration with sensible defaults and feature flags.
+
+#### Parameters
+
+- `options: AuthConfigBuilderOptions`
+  - `apiBaseUrl` - Base URL for backend API
+  - `features?` - Authentication features configuration
+    - `enablePasswordAuth?` - Enable/disable password authentication
+    - `passwordAuthPolicy?` - Password auth policy ('ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED')
+    - `allowedEmailDomains?` - Restrict password auth to specific domains
+    - `enabledOAuthProviders?` - List of OAuth providers to enable
+  - `oauthProviders?` - OAuth provider configurations
+  - `jwt?` - JWT configuration
+  - `pages?` - Custom page URLs
+
 ### createAuthConfig(config)
 
-Creates a NextAuth configuration object.
+Creates a NextAuth configuration object with full control.
 
 #### Parameters
 
@@ -260,6 +357,7 @@ Creates a NextAuth configuration object.
   - `pages?` - Custom pages
   - `session?` - Session configuration
   - `jwt?` - JWT configuration
+  - `features?` - Authentication features
 
 ### useAuthSession(options?)
 
@@ -297,12 +395,48 @@ Creates an API client with authentication.
 - `delete(endpoint, options?)` - DELETE request
 - `patch(endpoint, data?, options?)` - PATCH request
 
+### Components
+
+#### SignInForm
+
+Pre-built sign-in form with password and OAuth options.
+
+```tsx
+<SignInForm
+  features={authFeatures}
+  callbackUrl="/dashboard"
+  className="custom-form"
+  onSuccess={() => {}}
+  onError={(error) => {}}
+/>
+```
+
+#### OAuthButton
+
+Individual OAuth provider button.
+
+```tsx
+<OAuthButton
+  provider="google" // 'google' | 'facebook' | 'github' | 'kakao' | 'naver'
+  callbackUrl="/dashboard"
+  className="custom-button"
+>
+  Custom Button Text
+</OAuthButton>
+```
+
 ## TypeScript Support
 
 This library is written in TypeScript and provides full type definitions.
 
 ```typescript
-import type { AuthConfig, AuthUser, SignInCredentials } from 'sp-nextauth-jwt-lib'
+import type { 
+  AuthConfig, 
+  AuthUser, 
+  SignInCredentials,
+  AuthFeatures,
+  OAuthProviderType 
+} from 'sp-nextauth-jwt-lib'
 ```
 
 ## License

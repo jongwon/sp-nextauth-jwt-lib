@@ -47,18 +47,39 @@ export interface AuthConfig {
   pages?: AuthPages
   session?: SessionConfig
   jwt?: JWTConfig
+  features?: AuthFeatures
 }
+
+export interface AuthFeatures {
+  enablePasswordAuth?: boolean
+  passwordAuthPolicy?: 'ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED'
+  allowedEmailDomains?: string[]
+  enabledOAuthProviders?: OAuthProviderType[]
+}
+
+export type OAuthProviderType = 'google' | 'facebook' | 'github' | 'kakao' | 'naver'
 
 export interface ProviderConfig {
   type: 'credentials' | 'oauth2'
   name: string
   id?: string
+  enabled?: boolean
   clientId?: string
   clientSecret?: string
-  scope?: string
+  scope?: string | string[]
   authorizationUrl?: string
   tokenUrl?: string
   userInfoUrl?: string
+  style?: OAuthProviderStyle
+}
+
+export interface OAuthProviderStyle {
+  logo?: string
+  logoDark?: string
+  bg?: string
+  bgDark?: string
+  text?: string
+  textDark?: string
 }
 
 export interface AuthCallbacks {

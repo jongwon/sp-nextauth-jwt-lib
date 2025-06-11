@@ -8,13 +8,19 @@ export function createOAuth2Provider(
   providerConfig: ProviderConfig,
   authConfig: AuthConfig
 ): OAuthConfig<any> {
-  switch (providerConfig.name.toLowerCase()) {
+  const providerId = providerConfig.id || providerConfig.name.toLowerCase()
+  
+  switch (providerId) {
     case 'kakao':
       return createKakaoProvider(providerConfig, authConfig)
     case 'google':
       return createGoogleProvider(providerConfig, authConfig)
     case 'naver':
       return createNaverProvider(providerConfig, authConfig)
+    case 'facebook':
+      return createFacebookProvider(providerConfig, authConfig)
+    case 'github':
+      return createGitHubProvider(providerConfig, authConfig)
     default:
       return createGenericOAuth2Provider(providerConfig, authConfig)
   }
@@ -108,6 +114,74 @@ function createNaverProvider(
         name: profile.response.name,
         email: profile.response.email,
         image: profile.response.profile_image,
+      }
+    },
+  }
+}
+
+/**
+ * Facebook OAuth2 provider
+ */
+function createFacebookProvider(
+  providerConfig: ProviderConfig,
+  authConfig: AuthConfig
+): OAuthConfig<any> {
+  return {
+    id: 'facebook',
+    name: 'Facebook',
+    type: 'oauth',
+    authorization: {
+      url: 'https://www.facebook.com/v12.0/dialog/oauth',
+      params: {
+        scope: providerConfig.scope || 'email public_profile',
+      },
+    },
+    token: 'https://graph.facebook.com/v12.0/oauth/access_token',
+    userinfo: 'https://graph.facebook.com/me?fields=id,name,email,picture',
+    client: {
+      client_id: providerConfig.clientId!,
+      client_secret: providerConfig.clientSecret!,
+    },
+    profile(profile) {
+      return {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        image: profile.picture?.data?.url,
+      }
+    },
+  }
+}
+
+/**
+ * GitHub OAuth2 provider
+ */
+function createGitHubProvider(
+  providerConfig: ProviderConfig,
+  authConfig: AuthConfig
+): OAuthConfig<any> {
+  return {
+    id: 'github',
+    name: 'GitHub',
+    type: 'oauth',
+    authorization: {
+      url: 'https://github.com/login/oauth/authorize',
+      params: {
+        scope: providerConfig.scope || 'read:user user:email',
+      },
+    },
+    token: 'https://github.com/login/oauth/access_token',
+    userinfo: 'https://api.github.com/user',
+    client: {
+      client_id: providerConfig.clientId!,
+      client_secret: providerConfig.clientSecret!,
+    },
+    profile(profile) {
+      return {
+        id: String(profile.id),
+        name: profile.name || profile.login,
+        email: profile.email,
+        image: profile.avatar_url,
       }
     },
   }
