@@ -6,7 +6,8 @@ import { TestModePanel } from './test-mode-panel'
 import { 
   isTestModeEnabled, 
   isAutoFillEnabled, 
-  getDefaultTestUser 
+  getDefaultTestUser,
+  getTestUsers 
 } from '../utils/test-mode'
 
 export interface SignInFormProps {
@@ -89,7 +90,20 @@ export function SignInForm({
       return true
     }
     const domain = email.split('@')[1]
-    return features.allowedEmailDomains.includes(domain)
+    return domain ? features.allowedEmailDomains.includes(domain) : false
+  }
+  
+  // Check if current email is from a test user (to allow test users even with domain restrictions)
+  const isTestUserEmail = (email: string) => {
+    if (!isTestModeEnabled(features.testMode)) {
+      return false
+    }
+    const testUsers = getTestUsers(features.testMode)
+    return testUsers.some(user => user.email === email)
+  }
+  
+  const isEmailValid = (email: string) => {
+    return isEmailAllowed(email) || isTestUserEmail(email)
   }
   
   return (
@@ -142,9 +156,19 @@ export function SignInForm({
               </div>
             )}
             
+            {email && !isEmailValid(email) && features.allowedEmailDomains && (
+              <div className="warning-message">
+                {isTestUserEmail(email) ? (
+                  <span>✅ Test user email allowed despite domain restrictions</span>
+                ) : (
+                  <span>❌ Email domain not allowed. Allowed domains: {features.allowedEmailDomains.join(', ')}</span>
+                )}
+              </div>
+            )}
+            
             <button
               type="submit"
-              disabled={isLoading || (!!email && !isEmailAllowed(email))}
+              disabled={isLoading || (!!email && !isEmailValid(email))}
               className="submit-button"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
@@ -243,6 +267,15 @@ export function SignInForm({
           border: 1px solid #fecaca;
           border-radius: 0.375rem;
           color: #991b1b;
+          font-size: 0.875rem;
+        }
+        
+        .warning-message {
+          padding: 0.75rem;
+          background-color: #fef3c7;
+          border: 1px solid #fde68a;
+          border-radius: 0.375rem;
+          color: #92400e;
           font-size: 0.875rem;
         }
         
