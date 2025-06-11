@@ -1,7 +1,7 @@
 {
-  "name": "nextauth-jwt-lib",
+  "name": "sp-nextauth-jwt-lib",
   "version": "1.0.0",
-  "description": "Reusable NextAuth.js authentication library with JWT integration",
+  "description": "SP Reusable NextAuth.js authentication library with JWT integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

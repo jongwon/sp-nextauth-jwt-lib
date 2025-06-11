@@ -1,4 +1,4 @@
-# NextAuth JWT Library
+# SP NextAuth JWT Library
 
 A reusable authentication library for Next.js applications using NextAuth.js with JWT integration.
 
@@ -15,9 +15,9 @@ A reusable authentication library for Next.js applications using NextAuth.js wit
 ## Installation
 
 ```bash
-npm install nextauth-jwt-lib
+npm install sp-nextauth-jwt-lib
 # or
-yarn add nextauth-jwt-lib
+yarn add sp-nextauth-jwt-lib
 ```
 
 ## Quick Start
@@ -28,7 +28,7 @@ Create `pages/api/auth/[...nextauth].ts` or `app/api/auth/[...nextauth]/route.ts
 
 ```typescript
 import NextAuth from 'next-auth'
-import { createAuthConfig } from 'nextauth-jwt-lib'
+import { createAuthConfig } from 'sp-nextauth-jwt-lib'
 
 const authConfig = createAuthConfig({
   apiEndpoints: {
@@ -98,7 +98,7 @@ export default function App({
 ### 4. Use Authentication in Components
 
 ```tsx
-import { useAuthSession } from 'nextauth-jwt-lib'
+import { useAuthSession } from 'sp-nextauth-jwt-lib'
 import { signIn, signOut } from 'next-auth/react'
 
 export function UserProfile() {
@@ -128,7 +128,7 @@ export function UserProfile() {
 ### 5. Make Authenticated API Calls
 
 ```tsx
-import { useAuthenticatedFetch } from 'nextauth-jwt-lib'
+import { useAuthenticatedFetch } from 'sp-nextauth-jwt-lib'
 
 export function TodoList() {
   const { apiClient } = useAuthenticatedFetch(process.env.NEXT_PUBLIC_API_URL!)
@@ -203,7 +203,7 @@ const authConfig = createAuthConfig({
 ### Direct API Client Usage
 
 ```typescript
-import { createApiClient } from 'nextauth-jwt-lib'
+import { createApiClient } from 'sp-nextauth-jwt-lib'
 
 const api = createApiClient('https://api.example.com')
 
@@ -302,7 +302,7 @@ Creates an API client with authentication.
 This library is written in TypeScript and provides full type definitions.
 
 ```typescript
-import type { AuthConfig, AuthUser, SignInCredentials } from 'nextauth-jwt-lib'
+import type { AuthConfig, AuthUser, SignInCredentials } from 'sp-nextauth-jwt-lib'
 ```
 
 ## License
