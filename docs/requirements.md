@@ -54,19 +54,29 @@ SP NextAuth JWT Library는 Next.js 애플리케이션을 위한 재사용 가능
 - ✅ 자동 토큰 첨부 HTTP 클라이언트
 - ✅ 토큰 갱신 실패 시 자동 재로그인 처리
 
-### 5. React 통합
+### 5. 테스트 모드
 
-#### 5.1 Hooks
+#### 5.1 개발 편의 기능
+- ✅ 테스트 사용자 자동 입력
+- ✅ 빠른 로그인 버튼
+- ✅ 환경 변수 기반 테스트 계정 설정
+- ✅ 개발 환경에서만 활성화
+
+### 6. React 통합
+
+#### 6.1 Hooks
 - ✅ `useAuthSession()` - JWT 토큰 관리가 포함된 향상된 세션 훅
 - ✅ `useAuthenticatedFetch()` - 자동 토큰 처리가 포함된 API 클라이언트 훅
 
-#### 5.2 컴포넌트
-- ✅ `SignInForm` - OAuth 옵션이 포함된 완전한 인증 폼
+#### 6.2 컴포넌트
+- ✅ `SignInForm` - OAuth 옵션이 포함된 완전한 로그인 폼
+- ✅ `SignUpForm` - 회원가입 폼 (이메일/비밀번호 + OAuth 옵션)
 - ✅ `OAuthButton` - 개별 OAuth 프로바이더 버튼
+- ✅ `TestModePanel` - 개발 환경용 빠른 로그인 패널
 
-### 6. TypeScript 지원
+### 7. TypeScript 지원
 
-#### 6.1 타입 안전성
+#### 7.1 타입 안전성
 - ✅ NextAuth 세션/사용자 타입 확장 (모듈 증강)
 - ✅ 모든 구성 옵션에 대한 포괄적인 TypeScript 인터페이스
 - ✅ 타입이 지정된 응답을 가진 제네릭 API 클라이언트

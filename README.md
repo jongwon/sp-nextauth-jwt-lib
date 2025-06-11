@@ -1,33 +1,70 @@
 # SP NextAuth JWT Library
 
-A reusable authentication library for Next.js applications using NextAuth.js with JWT integration and configurable authentication methods.
+🔐 Next.js 애플리케이션을 위한 완벽한 인증 솔루션. NextAuth.js와 JWT 기반 백엔드를 연결하는 프로덕션 준비 완료 라이브러리입니다.
 
-## Features
+## 🌟 주요 기능
 
-- 🔐 JWT-based authentication
-- 🌐 Multiple OAuth2 providers (Google, Facebook, GitHub, Kakao, Naver)
-- 📧 Configurable email/password authentication
-- 🔄 Automatic token refresh
-- 🎣 React hooks for authentication
-- 📡 Authenticated API client
-- 🎨 TypeScript support
-- ⚙️ Flexible authentication policies
-- 🎯 Domain-based access control
-- 🖼️ Pre-built authentication components
+- **🔑 다양한 인증 방법**: OAuth2 (Google, Facebook, GitHub, Kakao, Naver) + 이메일/비밀번호
+- **🛡️ JWT 토큰 관리**: 자동 갱신, 만료 처리, 안전한 저장
+- **⚡ 즉시 사용 가능한 컴포넌트**: 로그인/회원가입 폼, OAuth 버튼
+- **🎯 TypeScript 완벽 지원**: 타입 안전성 보장
+- **🧪 개발자 친화적**: 테스트 모드, 빠른 로그인, 자동 입력
+- **🔧 유연한 구성**: 환경별 정책, 도메인 제한, 커스텀 프로바이더
 
-## Installation
+## 📦 설치
 
 ```bash
 npm install sp-nextauth-jwt-lib
-# or
+# 또는
 yarn add sp-nextauth-jwt-lib
+# 또는
+pnpm add sp-nextauth-jwt-lib
 ```
 
-## Quick Start
+## 🚀 빠른 시작
 
-### 1. Create NextAuth Configuration
+### 1. 백엔드 요구사항
 
-Create `pages/api/auth/[...nextauth].ts` or `app/api/auth/[...nextauth]/route.ts`:
+이 라이브러리는 다음 엔드포인트를 제공하는 JWT 기반 백엔드가 필요합니다:
+
+```
+POST /api/auth/signin     # 로그인 (email, password) → { token, user }
+POST /api/auth/signup     # 회원가입 (name, email, password) → { token, user }
+POST /api/auth/signout    # 로그아웃 (Authorization: Bearer token)
+GET  /api/auth/me         # 사용자 정보 (Authorization: Bearer token) → { user }
+POST /api/auth/kakao      # Kakao OAuth (accessToken) → { token, user }
+```
+
+### 2. 환경 변수 설정
+
+`.env.local` 파일을 생성하고 다음을 추가하세요:
+
+```bash
+# 필수
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key-here  # openssl rand -base64 32
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# OAuth 프로바이더 (사용하는 것만 추가)
+KAKAO_CLIENT_ID=your-kakao-client-id
+KAKAO_CLIENT_SECRET=your-kakao-client-secret
+
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# 개발용 테스트 계정 (선택사항)
+TEST_USER_EMAIL=test@example.com
+TEST_USER_PASSWORD=test123
+```
+
+### 3. NextAuth 설정
+
+#### App Router (권장)
+
+`app/api/auth/[...nextauth]/route.ts` 파일을 생성하세요:
 
 ```typescript
 import NextAuth from 'next-auth'
@@ -36,11 +73,28 @@ import { buildAuthConfig } from 'sp-nextauth-jwt-lib'
 const authConfig = buildAuthConfig({
   apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
   features: {
+    // 이메일/비밀번호 인증 설정
     enablePasswordAuth: true,
     passwordAuthPolicy: 'ALLOW_ALL', // 'ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED'
-    enabledOAuthProviders: ['google', 'github', 'kakao'],
+    
+    // OAuth 프로바이더 설정
+    enabledOAuthProviders: ['kakao', 'google', 'github'],
+    
+    // 이메일 도메인 제한 (선택사항)
+    allowedEmailDomains: ['company.com', 'partner.com'],
+    
+    // 개발 모드 (개발 환경에서만)
+    testMode: {
+      enabled: process.env.NODE_ENV === 'development',
+      autoFill: true,
+      quickLogin: true,
+    }
   },
   oauthProviders: {
+    kakao: {
+      clientId: process.env.KAKAO_CLIENT_ID!,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+    },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -49,56 +103,87 @@ const authConfig = buildAuthConfig({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     },
-    kakao: {
-      clientId: process.env.KAKAO_CLIENT_ID!,
-      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
-    },
   },
+  // 백엔드 API 엔드포인트 커스터마이징 (선택사항)
+  apiEndpoints: {
+    signIn: '/api/auth/signin',
+    signUp: '/api/auth/signup',
+    signOut: '/api/auth/signout',
+    exchangeOAuth2Token: '/api/auth/kakao', // OAuth 프로바이더별로 다를 수 있음
+    me: '/api/auth/me'
+  },
+  pages: {
+    signIn: '/login',
+    error: '/auth/error',
+  }
 })
 
-// For Pages Router
-export default NextAuth(authConfig)
-
-// For App Router
 const handler = NextAuth(authConfig)
 export { handler as GET, handler as POST }
 ```
 
-### 2. Set Environment Variables
+#### Pages Router
 
-```bash
-# .env.local
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-key
-NEXT_PUBLIC_API_URL=http://localhost:8080
+`pages/api/auth/[...nextauth].ts` 파일을 생성하세요:
 
-# OAuth2 Providers (only set the ones you're using)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+```typescript
+import NextAuth from 'next-auth'
+import { buildAuthConfig } from 'sp-nextauth-jwt-lib'
 
-FACEBOOK_CLIENT_ID=your-facebook-client-id
-FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
+// 위와 동일한 설정
+const authConfig = buildAuthConfig({...})
 
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
-
-KAKAO_CLIENT_ID=your-kakao-client-id
-KAKAO_CLIENT_SECRET=your-kakao-client-secret
-
-NAVER_CLIENT_ID=your-naver-client-id
-NAVER_CLIENT_SECRET=your-naver-client-secret
+export default NextAuth(authConfig)
 ```
 
-### 3. Wrap App with SessionProvider
+### 4. SessionProvider 설정
+
+#### App Router
+
+`app/providers.tsx` 파일을 생성하세요:
 
 ```tsx
-// pages/_app.tsx or app/layout.tsx
+'use client'
+
 import { SessionProvider } from 'next-auth/react'
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return <SessionProvider>{children}</SessionProvider>
+}
+```
+
+`app/layout.tsx`에서 사용하세요:
+
+```tsx
+import { Providers } from './providers'
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="ko">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
+}
+```
+
+#### Pages Router
+
+`pages/_app.tsx`에서 설정하세요:
+
+```tsx
+import { SessionProvider } from 'next-auth/react'
+import type { AppProps } from 'next/app'
 
 export default function App({
   Component,
   pageProps: { session, ...pageProps },
-}) {
+}: AppProps) {
   return (
     <SessionProvider session={session}>
       <Component {...pageProps} />
@@ -107,129 +192,262 @@ export default function App({
 }
 ```
 
-### 4. Use Authentication Components
+## 📖 사용 가이드
+
+### 로그인 페이지
 
 ```tsx
-import { SignInForm, OAuthButton } from 'sp-nextauth-jwt-lib'
+'use client'
 
-// Complete sign-in form with password and OAuth options
-export function LoginPage() {
-  return (
-    <SignInForm
-      features={{
-        enablePasswordAuth: true,
-        passwordAuthPolicy: 'ALLOW_ALL',
-        enabledOAuthProviders: ['google', 'github', 'kakao'],
-        allowedEmailDomains: ['company.com'], // Optional email restrictions
-      }}
-      callbackUrl="/dashboard"
-      onSuccess={() => console.log('Login successful')}
-      onError={(error) => console.error('Login failed:', error)}
-    />
-  )
-}
+import { SignInForm } from 'sp-nextauth-jwt-lib'
+import { useRouter } from 'next/navigation'
 
-// Or use individual OAuth buttons
-export function SocialLogin() {
+export default function LoginPage() {
+  const router = useRouter()
+
   return (
-    <div>
-      <OAuthButton provider="google" />
-      <OAuthButton provider="github" />
-      <OAuthButton provider="kakao" />
-      <OAuthButton provider="facebook" />
-      <OAuthButton provider="naver" />
+    <div className="max-w-md mx-auto mt-8">
+      <h1 className="text-2xl font-bold mb-4">로그인</h1>
+      
+      <SignInForm
+        features={{
+          enablePasswordAuth: true,
+          passwordAuthPolicy: 'ALLOW_ALL',
+          enabledOAuthProviders: ['kakao', 'google', 'github'],
+        }}
+        callbackUrl="/dashboard"
+        onSuccess={() => {
+          // 로그인 성공 처리
+          router.push('/dashboard')
+        }}
+        onError={(error) => {
+          // 에러 처리
+          console.error('로그인 실패:', error)
+        }}
+      />
     </div>
   )
 }
 ```
 
-### 5. Use Authentication in Components
+### 회원가입 페이지
 
 ```tsx
+'use client'
+
+import { SignUpForm } from 'sp-nextauth-jwt-lib'
+import { useRouter } from 'next/navigation'
+
+export default function SignUpPage() {
+  const router = useRouter()
+
+  return (
+    <div className="max-w-md mx-auto mt-8">
+      <h1 className="text-2xl font-bold mb-4">회원가입</h1>
+      
+      <SignUpForm
+        features={{
+          enablePasswordAuth: true,
+          enabledOAuthProviders: ['kakao', 'google'],
+          allowedEmailDomains: ['company.com'], // 특정 도메인만 허용
+        }}
+        callbackUrl="/onboarding"
+        onSuccess={() => {
+          router.push('/onboarding')
+        }}
+        onError={(error) => {
+          alert(error.message)
+        }}
+      />
+    </div>
+  )
+}
+```
+
+### 인증 상태 확인
+
+```tsx
+'use client'
+
 import { useAuthSession } from 'sp-nextauth-jwt-lib'
-import { signIn, signOut } from 'next-auth/react'
+import { signOut } from 'next-auth/react'
 
 export function UserProfile() {
-  const { user, isAuthenticated, isLoading } = useAuthSession()
+  const { user, isAuthenticated, isLoading, accessToken } = useAuthSession()
 
-  if (isLoading) return <div>Loading...</div>
+  if (isLoading) return <div>로딩 중...</div>
   
-  if (!isAuthenticated) {
-    return (
-      <button onClick={() => signIn()}>
-        Sign In
-      </button>
-    )
-  }
+  if (!isAuthenticated) return <div>로그인이 필요합니다</div>
 
   return (
     <div>
-      <p>Welcome, {user?.name}!</p>
-      <button onClick={() => signOut()}>
-        Sign Out
-      </button>
+      <p>안녕하세요, {user?.name}님!</p>
+      <p>이메일: {user?.email}</p>
+      <button onClick={() => signOut()}>로그아웃</button>
     </div>
   )
 }
 ```
 
-### 6. Make Authenticated API Calls
+### API 호출
 
 ```tsx
+'use client'
+
 import { useAuthenticatedFetch } from 'sp-nextauth-jwt-lib'
+import { useEffect, useState } from 'react'
 
 export function TodoList() {
-  const { apiClient } = useAuthenticatedFetch(process.env.NEXT_PUBLIC_API_URL!)
+  const { apiClient, isAuthenticated } = useAuthenticatedFetch(
+    process.env.NEXT_PUBLIC_API_URL!
+  )
   const [todos, setTodos] = useState([])
 
   useEffect(() => {
-    if (apiClient) {
+    if (apiClient && isAuthenticated) {
+      // 자동으로 Authorization 헤더가 추가됩니다
       apiClient.get('/api/todos')
         .then(setTodos)
         .catch(console.error)
     }
-  }, [apiClient])
+  }, [apiClient, isAuthenticated])
 
   const createTodo = async (title: string) => {
     if (!apiClient) return
     
-    const newTodo = await apiClient.post('/api/todos', { title })
-    setTodos([...todos, newTodo])
+    try {
+      const newTodo = await apiClient.post('/api/todos', { title })
+      setTodos([...todos, newTodo])
+    } catch (error) {
+      console.error('Todo 생성 실패:', error)
+    }
   }
 
   return (
-    // Your component UI
+    <div>
+      {/* Todo 리스트 UI */}
+    </div>
   )
 }
 ```
 
-### 6. Test Mode for Development
+### 서버 사이드 인증
 
-Enable test mode for easy development and testing:
+```typescript
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+
+export async function getServerSideProps(context) {
+  const session = await getServerSession(
+    context.req,
+    context.res,
+    authOptions
+  )
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
+  }
+
+  // 백엔드 API 호출 시 토큰 사용
+  const response = await fetch('http://backend/api/protected', {
+    headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+    },
+  })
+
+  return {
+    props: {
+      data: await response.json(),
+    },
+  }
+}
+```
+
+## 🎨 컴포넌트 커스터마이징
+
+### 스타일 커스터마이징
+
+모든 컴포넌트는 `className` prop을 지원합니다:
 
 ```tsx
-import { SignInForm } from 'sp-nextauth-jwt-lib'
+<SignInForm
+  className="custom-form"
+  features={{...}}
+/>
 
+<OAuthButton
+  provider="google"
+  className="custom-oauth-button"
+>
+  Google로 계속하기
+</OAuthButton>
+```
+
+### 커스텀 OAuth 프로바이더
+
+```typescript
+const authConfig = createAuthConfig({
+  providers: [
+    // 기본 프로바이더
+    ...getDefaultProviders(config),
+    
+    // 커스텀 프로바이더 추가
+    {
+      id: 'custom-oauth',
+      name: 'Custom Provider',
+      type: 'oauth',
+      authorization: {
+        url: 'https://provider.com/oauth/authorize',
+        params: {
+          scope: 'read:user',
+        },
+      },
+      token: 'https://provider.com/oauth/token',
+      userinfo: 'https://provider.com/api/user',
+      clientId: process.env.CUSTOM_CLIENT_ID!,
+      clientSecret: process.env.CUSTOM_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          image: profile.avatar_url,
+        }
+      },
+    },
+  ],
+})
+```
+
+## 🧪 개발 모드
+
+개발 환경에서 테스트를 쉽게 하기 위한 기능들:
+
+### 테스트 모드 설정
+
+```typescript
 const authConfig = buildAuthConfig({
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
   features: {
-    enablePasswordAuth: true,
-    enabledOAuthProviders: ['google', 'github'],
     testMode: {
       enabled: true,
-      autoFill: true,        // Auto-fill test credentials
-      quickLogin: true,      // Show quick login buttons
+      autoFill: true,      // 로그인 폼 자동 채우기
+      quickLogin: true,    // 빠른 로그인 버튼 표시
       testUsers: [
         {
-          id: 'admin',
-          name: 'Admin User',
+          id: '1',
+          name: '관리자',
           email: 'admin@test.com',
           password: 'admin123',
           role: 'admin'
         },
         {
-          id: 'user',
-          name: 'Normal User',
+          id: '2',
+          name: '일반 사용자',
           email: 'user@test.com',
           password: 'user123',
           role: 'user'
@@ -238,258 +456,186 @@ const authConfig = buildAuthConfig({
     }
   }
 })
+```
 
-// Environment variables for test accounts
-// .env.local
+### 환경 변수로 테스트 계정 설정
+
+```bash
+# .env.local
 NEXT_PUBLIC_TEST_MODE=true
 TEST_USER_EMAIL=dev@test.com
-TEST_USER_PASSWORD=test123
-// Or multiple test users as JSON
-TEST_USERS={"admin":{"name":"Admin","email":"admin@test.com","password":"admin123","role":"admin"}}
+TEST_USER_PASSWORD=dev123
 ```
 
-Test mode features:
-- **Auto-fill**: Automatically fills login form with test credentials
-- **Quick login**: One-click login buttons for different test accounts
-- **Development only**: Only works in `NODE_ENV=development`
-- **Environment integration**: Load test accounts from environment variables
+## 🔧 고급 설정
 
-## Advanced Usage
-
-### Authentication Policies
+### 인증 정책
 
 ```typescript
-// Disable password authentication in production
-const authConfig = buildAuthConfig({
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
-  features: {
-    enablePasswordAuth: false, // Completely disable password auth
-    enabledOAuthProviders: ['google', 'github'], // Only OAuth login
-  },
-})
+// 개발 환경에서만 비밀번호 인증 허용
+passwordAuthPolicy: 'DEVELOPMENT_ONLY'
 
-// Allow password auth only in development
-const authConfig = buildAuthConfig({
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
-  features: {
-    passwordAuthPolicy: 'DEVELOPMENT_ONLY',
-    enabledOAuthProviders: ['google', 'github', 'kakao'],
-  },
-})
+// 특정 도메인만 허용
+allowedEmailDomains: ['company.com', 'partner.com']
 
-// Restrict password auth to specific email domains
-const authConfig = buildAuthConfig({
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
-  features: {
-    enablePasswordAuth: true,
-    allowedEmailDomains: ['company.com', 'partner.com'],
-    enabledOAuthProviders: ['google'],
-  },
-})
+// OAuth 프로바이더 동적 활성화
+enabledOAuthProviders: process.env.NODE_ENV === 'production' 
+  ? ['google', 'github'] 
+  : ['google', 'github', 'kakao', 'naver', 'facebook']
 ```
 
-### Custom Provider Configuration
+### 콜백 커스터마이징
 
 ```typescript
 const authConfig = createAuthConfig({
-  // ...
-  providers: [
-    {
-      type: 'oauth2',
-      name: 'custom-provider',
-      id: 'custom',
-      clientId: process.env.CUSTOM_CLIENT_ID!,
-      clientSecret: process.env.CUSTOM_CLIENT_SECRET!,
-      authorizationUrl: 'https://provider.com/oauth/authorize',
-      tokenUrl: 'https://provider.com/oauth/token',
-      userInfoUrl: 'https://provider.com/api/user',
-      scope: 'read:user',
-    },
-  ],
-})
-```
-
-### Custom Callbacks
-
-```typescript
-const authConfig = createAuthConfig({
-  // ...
+  // ... 기본 설정
   callbacks: {
-    onSignIn: async (user) => {
-      console.log('User signed in:', user)
-      // Track login event, update last login time, etc.
+    async jwt({ token, user, account }) {
+      // 커스텀 JWT 로직
+      if (user) {
+        token.role = user.role
+        token.permissions = user.permissions
+      }
+      return token
     },
-    onSignOut: async () => {
-      console.log('User signed out')
-      // Clean up local data, track logout, etc.
-    },
-    onError: async (error) => {
-      console.error('Auth error:', error)
-      // Send error to monitoring service
+    async session({ session, token }) {
+      // 커스텀 세션 로직
+      session.user.role = token.role
+      session.user.permissions = token.permissions
+      return session
     },
   },
 })
 ```
 
-### Direct API Client Usage
+## 📋 API 레퍼런스
+
+### Hooks
+
+#### `useAuthSession()`
+인증 세션 정보와 상태를 제공합니다.
 
 ```typescript
-import { createApiClient } from 'sp-nextauth-jwt-lib'
-
-const api = createApiClient('https://api.example.com')
-
-// In an authenticated context
-async function fetchUserData() {
-  try {
-    const profile = await api.get('/api/profile')
-    const posts = await api.get('/api/posts')
-    return { profile, posts }
-  } catch (error) {
-    console.error('API error:', error)
-  }
-}
+const {
+  session,        // NextAuth 세션 객체
+  status,         // 'loading' | 'authenticated' | 'unauthenticated'
+  isAuthenticated,// boolean
+  isLoading,      // boolean
+  user,           // 사용자 정보
+  accessToken,    // JWT 토큰
+} = useAuthSession()
 ```
 
-### Server-Side Authentication
+#### `useAuthenticatedFetch(baseUrl)`
+인증된 API 클라이언트를 제공합니다.
 
 ```typescript
-// pages/api/protected.ts or app/api/protected/route.ts
-import { getServerSession } from 'next-auth'
-import { authConfig } from './auth/[...nextauth]'
-
-export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authConfig)
-  
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  
-  // Use session.accessToken for backend API calls
-  const response = await fetch('http://backend/api/data', {
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`,
-    },
-  })
-  
-  const data = await response.json()
-  res.json(data)
-}
+const {
+  apiClient,      // API 클라이언트 인스턴스
+  isAuthenticated,// boolean
+  accessToken,    // JWT 토큰
+} = useAuthenticatedFetch('https://api.example.com')
 ```
-
-## API Reference
-
-### buildAuthConfig(options)
-
-Creates a NextAuth configuration with sensible defaults and feature flags.
-
-#### Parameters
-
-- `options: AuthConfigBuilderOptions`
-  - `apiBaseUrl` - Base URL for backend API
-  - `features?` - Authentication features configuration
-    - `enablePasswordAuth?` - Enable/disable password authentication
-    - `passwordAuthPolicy?` - Password auth policy ('ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED')
-    - `allowedEmailDomains?` - Restrict password auth to specific domains
-    - `enabledOAuthProviders?` - List of OAuth providers to enable
-  - `oauthProviders?` - OAuth provider configurations
-  - `jwt?` - JWT configuration
-  - `pages?` - Custom page URLs
-
-### createAuthConfig(config)
-
-Creates a NextAuth configuration object with full control.
-
-#### Parameters
-
-- `config: AuthConfig` - Authentication configuration
-  - `apiEndpoints` - Backend API endpoints
-  - `providers` - Authentication providers
-  - `callbacks?` - Optional callbacks
-  - `pages?` - Custom pages
-  - `session?` - Session configuration
-  - `jwt?` - JWT configuration
-  - `features?` - Authentication features
-
-### useAuthSession(options?)
-
-React hook for accessing authentication session.
-
-#### Returns
-
-- `session` - Current session object
-- `status` - Authentication status
-- `isAuthenticated` - Whether user is authenticated
-- `isLoading` - Loading state
-- `isExpired` - Token expiration state
-- `user` - Current user object
-- `accessToken` - JWT access token
-
-### useAuthenticatedFetch(baseUrl)
-
-React hook for making authenticated API calls.
-
-#### Returns
-
-- `apiClient` - Authenticated API client
-- `isAuthenticated` - Authentication state
-- `accessToken` - Current access token
-
-### createApiClient(baseUrl)
-
-Creates an API client with authentication.
-
-#### Methods
-
-- `get(endpoint, options?)` - GET request
-- `post(endpoint, data?, options?)` - POST request
-- `put(endpoint, data?, options?)` - PUT request
-- `delete(endpoint, options?)` - DELETE request
-- `patch(endpoint, data?, options?)` - PATCH request
 
 ### Components
 
-#### SignInForm
-
-Pre-built sign-in form with password and OAuth options.
-
-```tsx
-<SignInForm
-  features={authFeatures}
-  callbackUrl="/dashboard"
-  className="custom-form"
-  onSuccess={() => {}}
-  onError={(error) => {}}
-/>
+#### `SignInForm`
+```typescript
+interface SignInFormProps {
+  features?: AuthFeatures
+  callbackUrl?: string
+  className?: string
+  onSuccess?: () => void
+  onError?: (error: Error) => void
+}
 ```
 
-#### OAuthButton
-
-Individual OAuth provider button.
-
-```tsx
-<OAuthButton
-  provider="google" // 'google' | 'facebook' | 'github' | 'kakao' | 'naver'
-  callbackUrl="/dashboard"
-  className="custom-button"
->
-  Custom Button Text
-</OAuthButton>
+#### `SignUpForm`
+```typescript
+interface SignUpFormProps {
+  features?: AuthFeatures
+  callbackUrl?: string
+  className?: string
+  onSuccess?: () => void
+  onError?: (error: Error) => void
+  signUpEndpoint?: string
+}
 ```
 
-## TypeScript Support
+#### `OAuthButton`
+```typescript
+interface OAuthButtonProps {
+  provider: OAuthProviderType
+  callbackUrl?: string
+  className?: string
+  children?: React.ReactNode
+}
+```
 
-This library is written in TypeScript and provides full type definitions.
+### Types
 
 ```typescript
-import type { 
-  AuthConfig, 
-  AuthUser, 
-  SignInCredentials,
-  AuthFeatures,
-  OAuthProviderType 
-} from 'sp-nextauth-jwt-lib'
+type OAuthProviderType = 'google' | 'facebook' | 'github' | 'kakao' | 'naver'
+
+type PasswordAuthPolicy = 'ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED'
+
+interface AuthFeatures {
+  enablePasswordAuth?: boolean
+  passwordAuthPolicy?: PasswordAuthPolicy
+  allowedEmailDomains?: string[]
+  enabledOAuthProviders?: OAuthProviderType[]
+  testMode?: TestModeConfig
+}
 ```
 
-## License
+## 🐛 문제 해결
 
-MIT
+### 일반적인 문제
+
+#### 1. "NEXTAUTH_SECRET is not set" 에러
+```bash
+# .env.local에 추가
+NEXTAUTH_SECRET=$(openssl rand -base64 32)
+```
+
+#### 2. OAuth 리다이렉트 URL 에러
+OAuth 프로바이더 설정에서 다음 URL을 허용하세요:
+- 개발: `http://localhost:3000/api/auth/callback/{provider}`
+- 프로덕션: `https://yourdomain.com/api/auth/callback/{provider}`
+
+#### 3. CORS 에러
+백엔드에서 프론트엔드 도메인을 CORS 허용 목록에 추가하세요.
+
+### 디버깅
+
+```typescript
+// 디버그 모드 활성화
+const authConfig = buildAuthConfig({
+  // ... 설정
+  debug: process.env.NODE_ENV === 'development',
+})
+```
+
+## 📄 라이선스
+
+MIT License
+
+## 🤝 기여하기
+
+기여는 언제나 환영합니다! 이슈를 생성하거나 PR을 제출해주세요.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📞 지원
+
+- 📧 이메일: support@example.com
+- 💬 Discord: [커뮤니티 참여](https://discord.gg/example)
+- 📚 문서: [상세 문서](https://docs.example.com)
+
+---
+
+Made with ❤️ by SP Team
