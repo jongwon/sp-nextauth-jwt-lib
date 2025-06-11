@@ -70,7 +70,9 @@ function createGoogleProvider(
     authorization: {
       url: 'https://accounts.google.com/o/oauth2/v2/auth',
       params: {
-        scope: providerConfig.scope || 'openid email profile',
+        scope: Array.isArray(providerConfig.scope) 
+          ? providerConfig.scope.join(' ') 
+          : providerConfig.scope || 'openid email profile',
       },
     },
     token: 'https://oauth2.googleapis.com/token',
@@ -133,7 +135,9 @@ function createFacebookProvider(
     authorization: {
       url: 'https://www.facebook.com/v12.0/dialog/oauth',
       params: {
-        scope: providerConfig.scope || 'email public_profile',
+        scope: Array.isArray(providerConfig.scope) 
+          ? providerConfig.scope.join(' ') 
+          : providerConfig.scope || 'email public_profile',
       },
     },
     token: 'https://graph.facebook.com/v12.0/oauth/access_token',
@@ -167,7 +171,9 @@ function createGitHubProvider(
     authorization: {
       url: 'https://github.com/login/oauth/authorize',
       params: {
-        scope: providerConfig.scope || 'read:user user:email',
+        scope: Array.isArray(providerConfig.scope) 
+          ? providerConfig.scope.join(' ') 
+          : providerConfig.scope || 'read:user user:email',
       },
     },
     token: 'https://github.com/login/oauth/access_token',

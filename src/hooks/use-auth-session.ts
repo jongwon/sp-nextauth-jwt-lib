@@ -11,7 +11,7 @@ export interface UseAuthSessionOptions {
  */
 export function useAuthSession(options?: UseAuthSessionOptions) {
   const { data: session, status, update } = useSession({
-    required: options?.required,
+    required: options?.required || false,
     onUnauthenticated: options?.onUnauthenticated,
   })
   

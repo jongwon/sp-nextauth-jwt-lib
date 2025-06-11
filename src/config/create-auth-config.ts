@@ -136,7 +136,6 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
 
     jwt: {
       secret: config.jwt?.secret || process.env.NEXTAUTH_SECRET,
-      encryption: config.jwt?.encryption,
       maxAge: config.jwt?.maxAge || 30 * 24 * 60 * 60, // 30 days
     },
 

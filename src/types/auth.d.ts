@@ -55,6 +55,22 @@ export interface AuthFeatures {
   passwordAuthPolicy?: 'ALLOW_ALL' | 'DEVELOPMENT_ONLY' | 'DISABLED'
   allowedEmailDomains?: string[]
   enabledOAuthProviders?: OAuthProviderType[]
+  testMode?: TestModeConfig
+}
+
+export interface TestModeConfig {
+  enabled?: boolean
+  autoFill?: boolean
+  quickLogin?: boolean
+  testUsers?: TestUser[]
+}
+
+export interface TestUser {
+  id: string
+  name: string
+  email: string
+  password: string
+  role?: string
 }
 
 export type OAuthProviderType = 'google' | 'facebook' | 'github' | 'kakao' | 'naver'

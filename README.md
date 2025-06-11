@@ -203,6 +203,57 @@ export function TodoList() {
 }
 ```
 
+### 6. Test Mode for Development
+
+Enable test mode for easy development and testing:
+
+```tsx
+import { SignInForm } from 'sp-nextauth-jwt-lib'
+
+const authConfig = buildAuthConfig({
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL!,
+  features: {
+    enablePasswordAuth: true,
+    enabledOAuthProviders: ['google', 'github'],
+    testMode: {
+      enabled: true,
+      autoFill: true,        // Auto-fill test credentials
+      quickLogin: true,      // Show quick login buttons
+      testUsers: [
+        {
+          id: 'admin',
+          name: 'Admin User',
+          email: 'admin@test.com',
+          password: 'admin123',
+          role: 'admin'
+        },
+        {
+          id: 'user',
+          name: 'Normal User',
+          email: 'user@test.com',
+          password: 'user123',
+          role: 'user'
+        }
+      ]
+    }
+  }
+})
+
+// Environment variables for test accounts
+// .env.local
+NEXT_PUBLIC_TEST_MODE=true
+TEST_USER_EMAIL=dev@test.com
+TEST_USER_PASSWORD=test123
+// Or multiple test users as JSON
+TEST_USERS={"admin":{"name":"Admin","email":"admin@test.com","password":"admin123","role":"admin"}}
+```
+
+Test mode features:
+- **Auto-fill**: Automatically fills login form with test credentials
+- **Quick login**: One-click login buttons for different test accounts
+- **Development only**: Only works in `NODE_ENV=development`
+- **Environment integration**: Load test accounts from environment variables
+
 ## Advanced Usage
 
 ### Authentication Policies

@@ -1,7 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import type { AuthFeatures, OAuthProviderType } from '../types'
 import { OAuthButton } from './oauth-button'
+import { TestModePanel } from './test-mode-panel'
+import { 
+  isTestModeEnabled, 
+  isAutoFillEnabled, 
+  getDefaultTestUser 
+} from '../utils/test-mode'
 
 export interface SignInFormProps {
   features?: AuthFeatures
@@ -37,6 +43,17 @@ export function SignInForm({
   
   // Get enabled OAuth providers
   const enabledProviders = features.enabledOAuthProviders || []
+  
+  // Auto-fill test credentials if enabled
+  useEffect(() => {
+    if (isAutoFillEnabled(features.testMode)) {
+      const defaultUser = getDefaultTestUser(features.testMode)
+      if (defaultUser) {
+        setEmail(defaultUser.email)
+        setPassword(defaultUser.password)
+      }
+    }
+  }, [features.testMode])
   
   const handlePasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,6 +94,17 @@ export function SignInForm({
   
   return (
     <div className={`signin-form ${className}`}>
+      {/* Test Mode Panel */}
+      {isTestModeEnabled(features.testMode) && (
+        <TestModePanel
+          testMode={features.testMode}
+          callbackUrl={callbackUrl}
+          onSuccess={onSuccess}
+          onError={onError}
+          className="test-mode-signin"
+        />
+      )}
+      
       {showPasswordAuth && (
         <>
           <form onSubmit={handlePasswordSignIn} className="password-form">
@@ -116,7 +144,7 @@ export function SignInForm({
             
             <button
               type="submit"
-              disabled={isLoading || (email && !isEmailAllowed(email))}
+              disabled={isLoading || (!!email && !isEmailAllowed(email))}
               className="submit-button"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}

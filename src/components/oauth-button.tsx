@@ -76,41 +76,26 @@ function getProviderStyles(provider: OAuthProviderType): React.CSSProperties {
         backgroundColor: '#fff',
         color: '#3c4043',
         border: '1px solid #dadce0',
-        '&:hover': {
-          backgroundColor: '#f8f9fa'
-        }
       }
     case 'facebook':
       return {
         backgroundColor: '#1877f2',
         color: '#fff',
-        '&:hover': {
-          backgroundColor: '#166fe5'
-        }
       }
     case 'github':
       return {
         backgroundColor: '#24292e',
         color: '#fff',
-        '&:hover': {
-          backgroundColor: '#1a1e22'
-        }
       }
     case 'kakao':
       return {
         backgroundColor: '#fee500',
         color: '#000',
-        '&:hover': {
-          backgroundColor: '#fdd835'
-        }
       }
     case 'naver':
       return {
         backgroundColor: '#03c75a',
         color: '#fff',
-        '&:hover': {
-          backgroundColor: '#02b350'
-        }
       }
     default:
       return {}
