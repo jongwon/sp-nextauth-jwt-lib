@@ -53,6 +53,8 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
       async jwt({ token, user, account }) {
         // Initial sign in
         if (account && user) {
+          console.log('JWT callback - account provider:', account.provider)
+          console.log('JWT callback - account:', account)
           if (account.provider === 'credentials') {
             // Credentials provider - token is already included
             token.id = user.id
@@ -65,13 +67,17 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
             token.accessTokenExpires = Date.now() + (24 * 60 * 60 * 1000)
           } else {
             // OAuth2 provider - exchange for server JWT
+            console.log('Attempting to exchange OAuth2 token for server JWT')
             const serverAuth = await exchangeOAuth2Token(
               account.provider,
               account.access_token!,
               config
             )
             
+            console.log('Server auth response:', serverAuth)
+            
             if (serverAuth) {
+              console.log('Using server JWT token')
               token.id = serverAuth.user.id
               token.accessToken = serverAuth.token
               token.name = serverAuth.user.name
@@ -82,6 +88,7 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
               token.accessTokenExpires = Date.now() + (24 * 60 * 60 * 1000)
             } else {
               // Fallback to OAuth token
+              console.log('Falling back to OAuth token')
               token.id = user.id
               token.accessToken = account.access_token
               token.refreshToken = account.refresh_token
@@ -154,6 +161,11 @@ async function exchangeOAuth2Token(
   const oauth2CallbackUrl = config.apiEndpoints.oauth2Callback || `/api/auth/${provider}`
   const url = `${config.apiEndpoints.baseUrl}${oauth2CallbackUrl}`
 
+  console.log('Exchanging OAuth2 token:')
+  console.log('- Provider:', provider)
+  console.log('- URL:', url)
+  console.log('- OAuth token present:', !!oauthToken)
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -163,12 +175,17 @@ async function exchangeOAuth2Token(
       body: JSON.stringify({ accessToken: oauthToken }),
     })
 
+    console.log('Exchange response status:', response.status)
+
     if (!response.ok) {
-      console.error('Failed to exchange OAuth2 token:', response.status)
+      const errorText = await response.text()
+      console.error('Failed to exchange OAuth2 token:', response.status, errorText)
       return null
     }
 
-    return await response.json()
+    const result = await response.json()
+    console.log('Exchange successful, received token:', !!result.token)
+    return result
   } catch (error) {
     console.error('Error exchanging OAuth2 token:', error)
     return null
