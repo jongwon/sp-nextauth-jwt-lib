@@ -11,9 +11,44 @@ export function createCredentialsProvider(config: AuthConfig) {
     name: 'credentials',
     credentials: {
       email: { label: 'Email', type: 'email', placeholder: 'email@example.com' },
-      password: { label: 'Password', type: 'password' }
+      password: { label: 'Password', type: 'password' },
+      token: { label: 'Token', type: 'text' },
+      refreshToken: { label: 'Refresh Token', type: 'text' },
+      isOAuthCallback: { label: 'OAuth Callback', type: 'text' }
     },
     async authorize(credentials) {
+      // OAuth callback 처리
+      if (credentials?.isOAuthCallback === 'true' && credentials?.token && credentials?.refreshToken) {
+        try {
+          // 토큰으로 사용자 정보 조회
+          const meUrl = `${config.apiEndpoints.baseUrl}${config.apiEndpoints.userInfo || '/api/auth/me'}`
+          const response = await fetch(meUrl, {
+            headers: {
+              'Authorization': `Bearer ${credentials.token}`
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error('Failed to get user info')
+          }
+          
+          const user = await response.json()
+          
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            accessToken: credentials.token,
+            refreshToken: credentials.refreshToken
+          }
+        } catch (error) {
+          console.error('OAuth callback error:', error)
+          return null
+        }
+      }
+      
+      // 일반 이메일/패스워드 로그인
       if (!credentials?.email || !credentials?.password) {
         return null
       }

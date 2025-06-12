@@ -53,6 +53,7 @@ export function buildAuthConfig(options: AuthConfigBuilderOptions): AuthConfig {
   }
   
   // Add OAuth providers
+  
   const oauthConfigs = createOAuthProviders(
     enabledOAuthProviders,
     Object.entries(oauthProviders).reduce((acc, [provider, config]) => ({

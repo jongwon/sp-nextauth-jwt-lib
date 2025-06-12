@@ -33,26 +33,35 @@ function createKakaoProvider(
   providerConfig: ProviderConfig,
   authConfig: AuthConfig
 ): OAuthConfig<any> {
+  
   return {
     id: 'kakao',
     name: 'Kakao',
     type: 'oauth',
-    authorization: 'https://kauth.kakao.com/oauth/authorize',
+    authorization: {
+      url: 'https://kauth.kakao.com/oauth/authorize',
+      params: {
+        scope: Array.isArray(providerConfig.scope) 
+          ? providerConfig.scope.join(' ') 
+          : providerConfig.scope || 'profile_nickname profile_image',
+      },
+    },
     token: 'https://kauth.kakao.com/oauth/token',
     userinfo: 'https://kapi.kakao.com/v2/user/me',
     client: {
-      client_id: providerConfig.clientId!,
-      client_secret: providerConfig.clientSecret!,
+      token_endpoint_auth_method: "client_secret_post",
     },
     checks: ['state'],
     profile(profile) {
       return {
         id: String(profile.id),
-        name: profile.properties?.nickname,
+        name: profile.properties?.nickname || profile.kakao_account?.profile?.nickname,
         email: profile.kakao_account?.email,
-        image: profile.properties?.profile_image,
+        image: profile.properties?.profile_image || profile.kakao_account?.profile?.profile_image_url,
       }
     },
+    clientId: providerConfig.clientId!,
+    clientSecret: providerConfig.clientSecret!,
   }
 }
 
@@ -77,10 +86,6 @@ function createGoogleProvider(
     },
     token: 'https://oauth2.googleapis.com/token',
     userinfo: 'https://www.googleapis.com/oauth2/v1/userinfo',
-    client: {
-      client_id: providerConfig.clientId!,
-      client_secret: providerConfig.clientSecret!,
-    },
     profile(profile) {
       return {
         id: profile.sub,
@@ -89,6 +94,8 @@ function createGoogleProvider(
         image: profile.picture,
       }
     },
+    clientId: providerConfig.clientId!,
+    clientSecret: providerConfig.clientSecret!,
   }
 }
 
@@ -106,10 +113,6 @@ function createNaverProvider(
     authorization: 'https://nid.naver.com/oauth2.0/authorize',
     token: 'https://nid.naver.com/oauth2.0/token',
     userinfo: 'https://openapi.naver.com/v1/nid/me',
-    client: {
-      client_id: providerConfig.clientId!,
-      client_secret: providerConfig.clientSecret!,
-    },
     profile(profile) {
       return {
         id: profile.response.id,
@@ -118,6 +121,8 @@ function createNaverProvider(
         image: profile.response.profile_image,
       }
     },
+    clientId: providerConfig.clientId!,
+    clientSecret: providerConfig.clientSecret!,
   }
 }
 
@@ -142,10 +147,6 @@ function createFacebookProvider(
     },
     token: 'https://graph.facebook.com/v12.0/oauth/access_token',
     userinfo: 'https://graph.facebook.com/me?fields=id,name,email,picture',
-    client: {
-      client_id: providerConfig.clientId!,
-      client_secret: providerConfig.clientSecret!,
-    },
     profile(profile) {
       return {
         id: profile.id,
@@ -154,6 +155,8 @@ function createFacebookProvider(
         image: profile.picture?.data?.url,
       }
     },
+    clientId: providerConfig.clientId!,
+    clientSecret: providerConfig.clientSecret!,
   }
 }
 
@@ -178,10 +181,6 @@ function createGitHubProvider(
     },
     token: 'https://github.com/login/oauth/access_token',
     userinfo: 'https://api.github.com/user',
-    client: {
-      client_id: providerConfig.clientId!,
-      client_secret: providerConfig.clientSecret!,
-    },
     profile(profile) {
       return {
         id: String(profile.id),
@@ -190,6 +189,8 @@ function createGitHubProvider(
         image: profile.avatar_url,
       }
     },
+    clientId: providerConfig.clientId!,
+    clientSecret: providerConfig.clientSecret!,
   }
 }
 
@@ -207,10 +208,6 @@ function createGenericOAuth2Provider(
     authorization: providerConfig.authorizationUrl!,
     token: providerConfig.tokenUrl!,
     userinfo: providerConfig.userInfoUrl!,
-    client: {
-      client_id: providerConfig.clientId!,
-      client_secret: providerConfig.clientSecret!,
-    },
     profile(profile) {
       // Generic profile mapping - customize as needed
       return {
@@ -220,5 +217,7 @@ function createGenericOAuth2Provider(
         image: profile.image || profile.picture || profile.avatar_url,
       }
     },
+    clientId: providerConfig.clientId!,
+    clientSecret: providerConfig.clientSecret!,
   }
 }

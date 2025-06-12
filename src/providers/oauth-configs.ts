@@ -60,7 +60,7 @@ export const oauthProviderConfigs: Record<OAuthProviderType, Omit<ProviderConfig
     type: 'oauth2',
     id: 'kakao',
     name: 'Kakao',
-    scope: 'profile_nickname account_email',
+    scope: 'profile_nickname profile_image',
     authorizationUrl: 'https://kauth.kakao.com/oauth/authorize',
     tokenUrl: 'https://kauth.kakao.com/oauth/token',
     userInfoUrl: 'https://kapi.kakao.com/v2/user/me',
@@ -105,10 +105,14 @@ export function getOAuthProviderConfig(
     return null
   }
   
+  const envClientId = process.env[`NEXT_PUBLIC_${type.toUpperCase()}_CLIENT_ID`]
+  const envClientSecret = process.env[`${type.toUpperCase()}_CLIENT_SECRET`]
+  
+  
   return {
     ...baseConfig,
-    clientId: clientId || process.env[`NEXT_PUBLIC_${type.toUpperCase()}_CLIENT_ID`],
-    clientSecret: clientSecret || process.env[`${type.toUpperCase()}_CLIENT_SECRET`],
+    clientId: clientId || envClientId,
+    clientSecret: clientSecret || envClientSecret,
     enabled: true
   }
 }
@@ -126,11 +130,16 @@ export function createOAuthProviders(
   
   return enabledProviders
     .map(providerType => {
-      const config = getOAuthProviderConfig(providerType)
+      // Get overrides first to pass clientId and clientSecret to getOAuthProviderConfig
+      const overrides = providerOverrides?.[providerType]
+      const config = getOAuthProviderConfig(
+        providerType,
+        overrides?.clientId,
+        overrides?.clientSecret
+      )
       if (!config) return null
       
-      // Apply overrides if provided
-      const overrides = providerOverrides?.[providerType]
+      // Apply remaining overrides if provided
       if (overrides) {
         return { ...config, ...overrides }
       }
