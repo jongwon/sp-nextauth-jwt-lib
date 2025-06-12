@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback } from 'react'
 import { useAuthSession } from './use-auth-session'
 import { createApiClient } from '../utils'
