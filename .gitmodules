@@ -1,0 +1,3 @@
+[submodule "lib/sp-nextauth-jwt-lib"]
+	path = lib/sp-nextauth-jwt-lib
+	url = git@github.com:jongwon/sp-nextauth-jwt-lib.git
