@@ -23,7 +23,7 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
     .filter(providerConfig => {
       // Filter out credentials provider if password auth is disabled
       if (providerConfig.type === 'credentials') {
-        if (!passwordAuthEnabled) return false
+        if (!passwordAuthEnabled) return false 
         
         // Check if it's development-only
         if (config.features?.passwordAuthPolicy === 'DEVELOPMENT_ONLY' && !isDevelopment) {
@@ -45,8 +45,8 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
     
     session: {
       strategy: config.session?.strategy || 'jwt',
-      maxAge: config.session?.maxAge || 30 * 24 * 60 * 60, // 30 days
-      updateAge: config.session?.updateAge || 24 * 60 * 60, // 24 hours
+      maxAge: 30 * 24 * 60 * 60, // 30 days TODO: AIDEV - Consider making maxAge configurable
+      updateAge: 24 * 60 * 60, // 24 hours
     },
 
     callbacks: {
