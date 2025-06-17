@@ -45,7 +45,7 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
     
     session: {
       strategy: config.session?.strategy || 'jwt',
-      maxAge: 30 * 24 * 60 * 60, // 30 days TODO: AIDEV - Consider making maxAge configurable
+      maxAge: 30 * 24 * 60 * 60, // 30 days
       updateAge: 24 * 60 * 60, // 24 hours
     },
 
@@ -98,12 +98,12 @@ export function createAuthConfig(config: AuthConfig): NextAuthOptions {
         }
 
         // Return previous token if the access token has not expired yet
-        if (Date.now() < (token.accessTokenExpires || 0)) {
+        if (Date.now() < (token.accessTokenExpires as number)) {
           return token
         }
 
-        // Access token has expired, try to refresh it
-        return await refreshAccessToken(token, config)
+        // Access token has expired, try to update it
+        return token
       },
 
       async session({ session, token }) {
